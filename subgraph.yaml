@@ -1,4 +1,6 @@
 specVersion: 0.0.2
+description: Iron Bank is a decentralized protocol to protocol lending platform.
+repository: https://github.com/ibdotxyz/ib-subgraph
 schema:
   file: ./schema.graphql
 dataSources:
@@ -53,7 +55,7 @@ dataSources:
           handler: handleNewSupplyCapGuardian
         - event: CreditLimitChanged(address,address,uint256)
           handler: handleCreditLimitChanged
-      file: ./src/mapping.ts
+      file: ./src/mappings/comptroller.ts
 templates:
   - name: CToken
     kind: ethereum/contract
@@ -97,3 +99,4 @@ templates:
           handler: handleNewImplementation
         - event: NewCollateralCap(address,uint256)
           handler: handleNewCollateralCap
+      file: ./src/mappings/ctoken.ts
