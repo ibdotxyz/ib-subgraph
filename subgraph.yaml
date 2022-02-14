@@ -1,4 +1,4 @@
-specVersion: 0.0.1
+specVersion: 0.0.2
 schema:
   file: ./schema.graphql
 dataSources:
@@ -8,28 +8,92 @@ dataSources:
     source:
       address: "0xAB1c342C7bf5Ec5F02ADEA1c2270670bCa144CbB"
       abi: Comptroller
+      startBlock: 11384868
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - Failure
-        - NewAdmin
-        - NewImplementation
-        - NewPendingAdmin
-        - NewPendingImplementation
+        - Comptroller
+        - Market
+        - CreditLimit
       abis:
         - name: Comptroller
           file: ./abis/Comptroller.json
+        - name: CCollateralCapErc20
+          file: ./abis/CCollateralCapErc20.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
-        - event: Failure(uint256,uint256,uint256)
-          handler: handleFailure
-        - event: NewAdmin(address,address)
-          handler: handleNewAdmin
+        - event: MarketListed(address)
+          handler: handleMarketListed
+        - event: MarketDelisted(address)
+          handler: handleMarketDelisted
+        - event: NewCloseFactor(uint256, uint256)
+          handler: handleNewCloseFactor
+        - event: NewCollateralFactor(address,uint256,uint256)
+          handler: handleNewCollateralFactor
+        - event: NewLiquidationIncentive(uint256,uint256)
+          handler: handleNewLiquidationIncentive
+        - event: NewPriceOracle(address,address)
+          handler: handleNewPriceOracle
+        - event: NewPauseGuardian(address,address)
+          handler: handleNewPauseGuardian
+        - event: NewLiquidityMining(address,address)
+          handler: handleNewLiquidityMining
+        - event: ActionPaused(address,string,bool)
+          handler: handleActionPaused
+        - event: NewBorrowCap(address,uint256)
+          handler: handleNewBorrowCap
+        - event: NewBorrowCapGuardian(address,address)
+          handler: handleNewBorrowCapGuardian
+        - event: NewSupplyCap(address,uint256)
+          handler: handleNewSupplyCap
+        - event: NewSupplyCapGuardian(address,address)
+          handler: handleNewSupplyCapGuardian
+        - event: CreditLimitChanged(address,address,uint256)
+          handler: handleCreditLimitChanged
+      file: ./src/mapping.ts
+templates:
+  - name: CToken
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: CCollateralCapErc20
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Market
+        - CreditLimit
+      abis:
+        - name: CCollateralCapErc20
+          file: ./abis/CCollateralCapErc20.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Mint(address,uint256,uint256)
+          handler: handleMint
+        - event: Redeem(address,uint256,uint256)
+          handler: handleRedeem
+        - event: Borrow(address,uint256,uint256,uint256)
+          handler: handleBorrow
+        - event: RepayBorrow(address,address,uint256,uint256,uint256)
+          handler: handleRepayBorrow
+        - event: LiquidateBorrow(address,address,uint256,address,uint256)
+          handler: handleLiquidateBorrow
+        - event: AccrueInterest(uint256,uint256,uint256,uint256)
+          handler: handleAccrueInterest
+        - event: Flashloan(address,uint256,uint256,uint256)
+          handler: handleFlashloan
+        - event: NewReserveFactor(uint256,uint256)
+          handler: handleNewReserveFactor
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: NewMarketInterestRateModel(address,address)
+          handler: handleNewMarketInterestRateModel
         - event: NewImplementation(address,address)
           handler: handleNewImplementation
-        - event: NewPendingAdmin(address,address)
-          handler: handleNewPendingAdmin
-        - event: NewPendingImplementation(address,address)
-          handler: handleNewPendingImplementation
-      file: ./src/mapping.ts
+        - event: NewCollateralCap(address,uint256)
+          handler: handleNewCollateralCap
