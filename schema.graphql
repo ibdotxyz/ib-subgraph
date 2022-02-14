@@ -1,0 +1,6 @@
+type ExampleEntity @entity {
+  id: ID!
+  count: BigInt!
+  error: BigInt! # uint256
+  info: BigInt! # uint256
+}

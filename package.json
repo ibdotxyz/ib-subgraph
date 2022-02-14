@@ -1,0 +1,16 @@
+{
+  "name": "ib-subgraph",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ ib-subgraph",
+    "create-local": "graph create --node http://localhost:8020/ ib-subgraph",
+    "remove-local": "graph remove --node http://localhost:8020/ ib-subgraph",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 ib-subgraph"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.23.0",
+    "@graphprotocol/graph-ts": "0.22.1"
+  }
+}

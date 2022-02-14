@@ -1,0 +1,35 @@
+specVersion: 0.0.1
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Comptroller
+    network: mainnet
+    source:
+      address: "0xAB1c342C7bf5Ec5F02ADEA1c2270670bCa144CbB"
+      abi: Comptroller
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Failure
+        - NewAdmin
+        - NewImplementation
+        - NewPendingAdmin
+        - NewPendingImplementation
+      abis:
+        - name: Comptroller
+          file: ./abis/Comptroller.json
+      eventHandlers:
+        - event: Failure(uint256,uint256,uint256)
+          handler: handleFailure
+        - event: NewAdmin(address,address)
+          handler: handleNewAdmin
+        - event: NewImplementation(address,address)
+          handler: handleNewImplementation
+        - event: NewPendingAdmin(address,address)
+          handler: handleNewPendingAdmin
+        - event: NewPendingImplementation(address,address)
+          handler: handleNewPendingImplementation
+      file: ./src/mapping.ts
