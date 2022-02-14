@@ -31,7 +31,7 @@ dataSources:
           handler: handleMarketListed
         - event: MarketDelisted(address)
           handler: handleMarketDelisted
-        - event: NewCloseFactor(uint256, uint256)
+        - event: NewCloseFactor(uint256,uint256)
           handler: handleNewCloseFactor
         - event: NewCollateralFactor(address,uint256,uint256)
           handler: handleNewCollateralFactor
@@ -45,11 +45,11 @@ dataSources:
           handler: handleNewLiquidityMining
         - event: ActionPaused(address,string,bool)
           handler: handleActionPaused
-        - event: NewBorrowCap(address,uint256)
+        - event: NewBorrowCap(indexed address,uint256)
           handler: handleNewBorrowCap
         - event: NewBorrowCapGuardian(address,address)
           handler: handleNewBorrowCapGuardian
-        - event: NewSupplyCap(address,uint256)
+        - event: NewSupplyCap(indexed address,uint256)
           handler: handleNewSupplyCap
         - event: NewSupplyCapGuardian(address,address)
           handler: handleNewSupplyCapGuardian
@@ -87,7 +87,7 @@ templates:
           handler: handleLiquidateBorrow
         - event: AccrueInterest(uint256,uint256,uint256,uint256)
           handler: handleAccrueInterest
-        - event: Flashloan(address,uint256,uint256,uint256)
+        - event: Flashloan(indexed address,uint256,uint256,uint256)
           handler: handleFlashloan
         - event: NewReserveFactor(uint256,uint256)
           handler: handleNewReserveFactor

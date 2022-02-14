@@ -11,7 +11,7 @@ type Comptroller @entity {
   "Address of the implementation of comptroller"
   implementation: Bytes!
   "The number of supported markets"
-  totalMarkets: BingInt!
+  totalMarkets: BigInt!
   "Address of price oracle the comptroller uses"
   priceOracle: Bytes!
   "Factor used to determine repayAmount for liquidating"
@@ -67,15 +67,15 @@ type Market @entity {
   "The cap of total borrow"
   borrowCap: BigDecimal!
   "Is supply paused"
-  supplyPaused: Bool!
+  supplyPaused: Boolean!
   "Is borrow paused"
-  borrowPaused: Bool!
+  borrowPaused: Boolean!
   "Is flashloan paused"
-  flashloanPaused: Bool!
+  flashloanPaused: Boolean!
   "Is market delisted"
-  delisted: Bool!
+  delisted: Boolean!
   "Credit limits of this market"
-  creditLimits: [Market!] @derivedFrom(field:"market")
+  creditLimits: [CreditLimit!] @derivedFrom(field:"market")
   "The cToken contract balance of ERC20 or ETH"
   cash: BigDecimal!
   "Exchange rate of tokens / cTokens"
