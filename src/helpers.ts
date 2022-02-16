@@ -2,7 +2,7 @@
 
 // For each division by 10, add one to exponent to truncate one significant figure
 import { BigDecimal, BigInt, Bytes, Address } from '@graphprotocol/graph-ts'
-import { AccountCToken, Account, AccountCTokenTransaction } from '../types/schema'
+// import { AccountCToken, Account, AccountCTokenTransaction } from '../types/schema'
 
 export function exponentToBigDecimal(decimals: i32): BigDecimal {
   let bd = BigDecimal.fromString('1')
@@ -17,3 +17,5 @@ export let cTokenDecimals = 8
 export let mantissaFactorBD: BigDecimal = exponentToBigDecimal(18)
 export let cTokenDecimalsBD: BigDecimal = exponentToBigDecimal(8)
 export let zeroBD = BigDecimal.fromString('0')
+export let initialExchangeRate = BigDecimal.fromString('0.02')
+export let zeroAddress: Address = Address.fromString('0x0000000000000000000000000000000000000000')

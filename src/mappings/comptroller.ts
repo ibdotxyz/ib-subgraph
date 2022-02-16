@@ -1,31 +1,126 @@
 /* eslint-disable prefer-const */ // to satisfy AS compiler
 
 import {
-  MarketEntered,
-  MarketExited,
+  NewAdmin,
+  NewImplementation,
   NewCloseFactor,
-  NewCollateralFactor,
   NewLiquidationIncentive,
   NewPriceOracle,
+  NewPauseGuardian,
+  NewLiquidityMining,
+  ActionPaused,
   MarketListed,
-} from '../types/Comptroller/Comptroller'
+  MarketDelisted,
+  MarketEntered,
+  MarketExited,
+  NewCollateralFactor,
+  NewBorrowCap,
+  NewBorrowCapGuardian,
+  NewSupplyCap,
+  NewSupplyCapGuardian,
+  CreditLimitChanged
+} from '../../generated/Comptroller/Comptroller'
 
-import { CToken } from '../types/templates'
-import { Market, Comptroller, Account } from '../types/schema'
-import { mantissaFactorBD, updateCommonCTokenStats, createAccount } from './helpers'
-import { createMarket } from './markets'
+import { Address } from '@graphprotocol/graph-ts'
+import { Comptroller as ComptrollerContract } from '../../generated/Comptroller/Comptroller'
+import { Account, Market, Comptroller } from '../../generated/schema'
+import { mantissaFactorBD, zeroAddress } from '../helpers'
+import { createAccount, updateCommonCTokenStats } from './account'
+import { createCreditLimit } from './creditlimit'
+import { createMarket } from './market'
 
-let invalid_markets: string[] = ['0xbdf447b39d152d6a234b4c02772b8ab5d1783f72']
+function createComptroller(address: Address): Comptroller {
+  let contract = ComptrollerContract.bind(address)
+
+  let comptroller = new Comptroller('1')
+  comptroller.address = address
+  comptroller.admin = contract.admin()
+  comptroller.implementation = contract.comptrollerImplementation()
+  comptroller.totalMarkets = 0
+
+  return comptroller
+}
+
+export function handleNewAdmin(event: NewAdmin): void {
+  let comptroller = Comptroller.load('1') as Comptroller
+  comptroller.admin = event.params.newAdmin
+  comptroller.save()
+}
+
+export function handleNewImplementation(event: NewImplementation): void {
+  let comptroller = Comptroller.load('1') as Comptroller
+  comptroller.implementation = event.params.newImplementation
+  comptroller.save()
+}
+
+export function handleNewCloseFactor(event: NewCloseFactor): void {
+  let comptroller = Comptroller.load('1') as Comptroller
+  // This is the first event used in this mapping, so we use it to create the entity
+  if (comptroller == null) {
+    comptroller = createComptroller(event.address)
+  }
+  comptroller.closeFactor = event.params.newCloseFactorMantissa
+  comptroller.save()
+}
+
+// This should be the first event according to etherscan but it isn't.... price oracle is. weird
+export function handleNewLiquidationIncentive(event: NewLiquidationIncentive): void {
+  let comptroller = Comptroller.load('1') as Comptroller
+  // This is the first event used in this mapping, so we use it to create the entity
+  if (comptroller == null) {
+    comptroller = createComptroller(event.address)
+  }
+  comptroller.liquidationIncentive = event.params.newLiquidationIncentiveMantissa
+  comptroller.save()
+}
+
+export function handleNewPriceOracle(event: NewPriceOracle): void {
+  let comptroller = Comptroller.load('1')
+  // This is the first event used in this mapping, so we use it to create the entity
+  if (comptroller == null) {
+    comptroller = createComptroller(event.address)
+  }
+  comptroller.priceOracle = event.params.newPriceOracle
+  comptroller.save()
+}
+
+export function handleNewPauseGuardian(event: NewPauseGuardian): void {
+  let comptroller = Comptroller.load('1') as Comptroller
+  comptroller.pauseGuardian = event.params.newPauseGuardian
+  comptroller.save()
+}
+
+export function handleNewLiquidityMining(event: NewLiquidityMining): void {
+  let comptroller = Comptroller.load('1') as Comptroller
+  comptroller.liquidityMining = event.params.newLiquidityMining
+  comptroller.save()
+}
+
+export function handleActionPaused(event: ActionPaused): void {
+  // TODO: handle mint/borrow/flashloan/transfer/seize pause action for single market
+}
 
 export function handleMarketListed(event: MarketListed): void {
-  if (invalid_markets.indexOf(event.params.cToken.toHexString()) !== -1) {
-    return
-  }
-  // Dynamically index all new listed tokens
-  CToken.create(event.params.cToken)
+  let comptroller = Comptroller.load('1') as Comptroller
+
+  comptroller.totalMarkets += 1
+  comptroller.save()
+
   // Create the market for this token, since it's now been listed.
-  let market = createMarket(event.params.cToken.toHexString())
+  let market = createMarket(event.params.cToken)
   market.save()
+}
+
+export function handleMarketDelisted(event: MarketDelisted): void {
+  let market = Market.load(event.params.cToken.toHexString())
+  if (market != null) {
+    market.delisted = true
+    market.save()
+
+    let comptroller = Comptroller.load('1') as Comptroller
+    comptroller.totalMarkets -= 1
+    comptroller.save()
+  }
 }
 
 export function handleMarketEntered(event: MarketEntered): void {
@@ -80,16 +175,6 @@ export function handleMarketExited(event: MarketExited): void {
   }
 }
 
-export function handleNewCloseFactor(event: NewCloseFactor): void {
-  let comptroller = Comptroller.load('1')
-  // This is the first event used in this mapping, so we use it to create the entity
-  if (comptroller == null) {
-    comptroller = new Comptroller('1')
-  }
-  comptroller.closeFactor = event.params.newCloseFactorMantissa
-  comptroller.save()
-}
-
 export function handleNewCollateralFactor(event: NewCollateralFactor): void {
   let market = Market.load(event.params.cToken.toHexString())
   // Null check needed to avoid crashing on a new market added. Ideally when dynamic data
@@ -103,23 +188,22 @@ export function handleNewCollateralFactor(event: NewCollateralFactor): void {
   }
 }
 
-// This should be the first event acccording to etherscan but it isn't.... price oracle is. weird
-export function handleNewLiquidationIncentive(event: NewLiquidationIncentive): void {
-  let comptroller = Comptroller.load('1')
-  // This is the first event used in this mapping, so we use it to create the entity
-  if (comptroller == null) {
-    comptroller = new Comptroller('1')
-  }
-  comptroller.liquidationIncentive = event.params.newLiquidationIncentiveMantissa
-  comptroller.save()
+export function handleNewBorrowCap(event: NewBorrowCap): void {
+  // TODO
 }
 
-export function handleNewPriceOracle(event: NewPriceOracle): void {
-  let comptroller = Comptroller.load('1')
-  // This is the first event used in this mapping, so we use it to create the entity
-  if (comptroller == null) {
-    comptroller = new Comptroller('1')
-  }
-  comptroller.priceOracle = event.params.newPriceOracle
-  comptroller.save()
+export function handleNewBorrowCapGuardian(event: NewBorrowCapGuardian): void {
+  // TODO
+}
+
+export function handleNewSupplyCap(event: NewSupplyCap): void {
+  // TODO
+}
+
+export function handleNewSupplyCapGuardian(event: NewSupplyCapGuardian): void {
+  // TODO
+}
+
+export function handleCreditLimitChanged(event: CreditLimitChanged): void {
+  // TODO: create a new credit limit entity if load == null
 }
