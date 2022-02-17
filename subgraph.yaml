@@ -41,8 +41,10 @@ dataSources:
           handler: handleNewPauseGuardian
         - event: NewLiquidityMining(address,address)
           handler: handleNewLiquidityMining
+        - event: ActionPaused(string,bool)
+          handler: handleGlobalActionPaused
         - event: ActionPaused(address,string,bool)
-          handler: handleActionPaused
+          handler: handleCTokenActionPaused
         - event: MarketListed(address)
           handler: handleMarketListed
         - event: MarketDelisted(address)
@@ -110,4 +112,8 @@ templates:
           handler: handleNewImplementation
         - event: NewCollateralCap(address,uint256)
           handler: handleNewCollateralCap
+        - event: NewTokenName(string,string)
+          handler: handleNewTokenName
+        - event: NewTokenSymbol(string,string)
+          handler: handleNewTokenSymbol
       file: ./src/mappings/ctoken.ts
