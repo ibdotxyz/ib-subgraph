@@ -20,8 +20,16 @@ type Comptroller @entity {
   liquidationIncentive: BigInt!
   "Address of guardian who can pause market interactions"
   pauseGuardian: Bytes!
+  "Address of guardian who can set market borrow caps"
+  borrowCapGuardian: Bytes!
+  "Address of guardian who can set market supply caps"
+  supplyCapGuardian: Bytes!
   "Address of liquidity mining module"
   liquidityMining: Bytes!
+  "State of the seize guardian being paused"
+  seizeGuardianPaused: Boolean
+  "State of the transfer guardian being paused"
+  transferGuardianPaused: Boolean
 }
 
 enum OracleType {
@@ -191,7 +199,7 @@ type FlashloanEvent @entity {
 TransferEvent will be stored for every mint, redeem, liquidation, and any normal
 transfer between two accounts.
 """
-type TransferEvent implements CTokenTransfer @entity {
+type TransferEvent @entity {
   "Transaction hash concatenated with log index"
   id: ID!
   "cToken Market"

@@ -5,7 +5,6 @@ import { Market } from '../../generated/schema'
 import { CToken } from '../../generated/templates'
 import { ERC20 } from '../../generated/templates/CToken/ERC20'
 import { CCollateralCapErc20 } from '../../generated/templates/CToken/CCollateralCapErc20'
-
 import {
   zeroBD,
   initialExchangeRate
@@ -24,7 +23,7 @@ export function createMarket(marketAddress: Address): Market {
   market.name = contract.name()
 
   market.underlyingAddress = contract.underlying()
-  let underlyingContract = ERC20.bind(market.underlyingAddress as Address)
+  let underlyingContract = ERC20.bind(contract.underlying())
   let underlyingDecimals = underlyingContract.try_decimals()
   if (underlyingDecimals.reverted) {
     // assume underlying not deploy yet
@@ -50,8 +49,6 @@ export function createMarket(marketAddress: Address): Market {
   market.borrowPaused = false
   market.flashloanPaused = false
   market.delisted = false
-
-  market.creditLimits = []
 
   market.cash = zeroBD
   market.exchangeRate = initialExchangeRate

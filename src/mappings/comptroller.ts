@@ -9,6 +9,7 @@ import {
   NewPauseGuardian,
   NewLiquidityMining,
   ActionPaused,
+  ActionPaused1,
   MarketListed,
   MarketDelisted,
   MarketEntered,
@@ -23,8 +24,8 @@ import {
 
 import { Address } from '@graphprotocol/graph-ts'
 import { Comptroller as ComptrollerContract } from '../../generated/Comptroller/Comptroller'
-import { Account, Market, Comptroller } from '../../generated/schema'
-import { mantissaFactorBD, zeroAddress } from '../helpers'
+import { Account, Market, Comptroller, CreditLimit } from '../../generated/schema'
+import { exponentToBigDecimal, mantissaFactorBD} from '../helpers'
 import { createAccount, updateCommonCTokenStats } from './account'
 import { createCreditLimit } from './creditlimit'
 import { createMarket } from './market'
@@ -48,7 +49,10 @@ export function handleNewAdmin(event: NewAdmin): void {
 }
 
 export function handleNewImplementation(event: NewImplementation): void {
-  let comptroller = Comptroller.load('1') as Comptroller
+  let comptroller = Comptroller.load('1')
+  if (comptroller == null) {
+    comptroller = createComptroller(event.address)
+  }
   comptroller.implementation = event.params.newImplementation
   comptroller.save()
 }
@@ -96,8 +100,36 @@ export function handleNewLiquidityMining(event: NewLiquidityMining): void {
   comptroller.save()
 }
 
-export function handleActionPaused(event: ActionPaused): void {
-  // TODO: handle mint/borrow/flashloan/transfer/seize pause action for single market
+export function handleGlobalActionPaused(event: ActionPaused):void {
+  let comptroller = Comptroller.load('1') as Comptroller
+  let action = event.params.action
+  let pauseState = event.params.pauseState
+  if (action == 'Transfer'){
+    comptroller.transferGuardianPaused = pauseState
+    comptroller.save()
+  } else if (action == 'Seize'){
+    comptroller.seizeGuardianPaused = pauseState
+    comptroller.save()
+  }
+  
+}
+
+export function handleCTokenActionPaused(event: ActionPaused1): void {
+  let market = Market.load(event.params.cToken.toHexString())
+  if (market != null) {
+    let action = event.params.action
+    let pauseState = event.params.pauseState
+    if (action ==  'Mint') {
+      market.supplyPaused = pauseState
+    }
+    else if (action == 'Borrow') {
+      market.borrowPaused = pauseState
+    }
+    if (action == 'Flashloan') {
+      market.flashloanPaused = pauseState
+    }
+    market.save()
+  }
 }
 
 export function handleMarketListed(event: MarketListed): void {
@@ -189,21 +221,45 @@ export function handleNewCollateralFactor(event: NewCollateralFactor): void {
 }
 
 export function handleNewBorrowCap(event: NewBorrowCap): void {
-  // TODO
+  let market = Market.load(event.params.cToken.toHexString())
+  if (market != null) {
+    market.borrowCap = event.params.newBorrowCap.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+    market.save()
+  }
 }
 
 export function handleNewBorrowCapGuardian(event: NewBorrowCapGuardian): void {
-  // TODO
+  let comptroller = Comptroller.load('1') as Comptroller
+  comptroller.borrowCapGuardian = event.params.newBorrowCapGuardian
+  comptroller.save()
 }
 
 export function handleNewSupplyCap(event: NewSupplyCap): void {
-  // TODO
+  let market = Market.load(event.params.cToken.toHexString())
+  if (market != null) {
+    market.supplyCap = event.params.newSupplyCap.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+    market.save()
+  }
 }
 
 export function handleNewSupplyCapGuardian(event: NewSupplyCapGuardian): void {
-  // TODO
+  let comptroller = Comptroller.load('1') as Comptroller
+  comptroller.supplyCapGuardian = event.params.newSupplyCapGuardian
+  comptroller.save()
 }
 
 export function handleCreditLimitChanged(event: CreditLimitChanged): void {
-  // TODO: create a new credit limit entity if load == null
+  let borrowerAddress = event.params.protocol.toHexString()
+  let marketAddress = event.params.market.toHexString()
+  let creditLimitID = borrowerAddress.concat('-').concat(marketAddress)
+  let market = Market.load(marketAddress)
+  let creditLimit = CreditLimit.load(creditLimitID)
+  if (market != null){
+    if (creditLimit == null){
+      creditLimit = createCreditLimit(event)
+    } 
+    creditLimit.creditLimit = event.params.creditLimit.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+    creditLimit.blockTimestamp = event.block.timestamp.toI32()
+    creditLimit.save()
+  }
 }

@@ -5,7 +5,7 @@ import {
 } from '../../generated/Comptroller/Comptroller'
 
 import { CreditLimit } from '../../generated/schema'
-import { zeroBD } from '..//helpers'
+import { zeroBD } from '../helpers'
 
 export function createCreditLimit(event: CreditLimitChanged): CreditLimit {
   let borrowerAddress = event.params.protocol

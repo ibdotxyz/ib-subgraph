@@ -12,7 +12,9 @@ import {
   NewReserveFactor,
   NewMarketInterestRateModel,
   NewImplementation,
-  NewCollateralCap
+  NewCollateralCap,
+  NewTokenName,
+  NewTokenSymbol
 } from '../../generated/templates/CToken/CCollateralCapErc20'
 
 import {
@@ -26,16 +28,22 @@ import {
   TransferEvent,
   BorrowEvent,
   RepayEvent,
+  FlashloanEvent
 } from '../../generated/schema'
 
-import { createAccount, updateCommonCTokenStats } from './account'
+import { createAccountCToken, createAccount, updateCommonCTokenStats } from './account'
 import { cTokenDecimals, cTokenDecimalsBD, exponentToBigDecimal, mantissaFactor, mantissaFactorBD, zeroBD } from '../helpers'
+import { ERC20 } from '../../generated/Comptroller/ERC20'
+import { Address } from '@graphprotocol/graph-ts'
 
 export function handleAccrueInterest(event: AccrueInterest): void {
   let marketID = event.address.toHexString()
   let blockTimestamp = event.block.timestamp.toI32()
 
-  let market = Market.load(marketID) as Market
+  let market = Market.load(marketID)
+  if (market == null){
+    return
+  }
   market.blockTimestamp = blockTimestamp
 
   market.cash = event.params.cashPrior
@@ -47,9 +55,12 @@ export function handleAccrueInterest(event: AccrueInterest): void {
     .toBigDecimal()
     .div(exponentToBigDecimal(market.underlyingDecimals))
     .truncate(market.underlyingDecimals)
-
-  // TODO: if market.underlyingSymbol == '', try fetch underlyingDecimal/Symbol/Name and update
-
+  if (market.underlyingSymbol == '') {
+    let underlyingContract = ERC20.bind(market.underlyingAddress as Address)
+    market.underlyingSymbol = underlyingContract.symbol()
+    market.underlyingName = underlyingContract.name()
+    market.underlyingDecimals = underlyingContract.decimals()
+  }
   market.save()
 }
 
@@ -157,8 +168,8 @@ export function handleRedeem(event: Redeem): void {
  *    Update creditBorrow in CreditLimit entity if borrower has credit limit
  */
 export function handleBorrow(event: Borrow): void {
-  // TODO: if borrower is credit limiter, update creditBorrow to keep track of credit limit usage
-  let market = Market.load(event.address.toHexString()) as Market
+  let marketAddress = event.address.toHexString()
+  let market = Market.load(marketAddress) as Market
   let accountID = event.params.borrower.toHex()
   let account = Account.load(accountID)
   if (account == null) {
@@ -221,6 +232,15 @@ export function handleBorrow(event: Borrow): void {
   borrow.underlyingSymbol = market.underlyingSymbol
   borrow.cToken = event.address
   borrow.save()
+
+  // keep track of credit limit data if borrower is a credit limit account
+  let creditLimitID = event.params.borrower.toHexString().concat('-').concat(marketAddress)
+  let creditLimit = CreditLimit.load(creditLimitID)
+  if (creditLimit != null){
+    creditLimit.creditBorrow = accountBorrows
+    creditLimit.blockTimestamp = event.block.timestamp.toI32()
+    creditLimit.save()
+  }
 }
 
 /* Repay some amount borrowed. Anyone can repay anyones balance
@@ -239,8 +259,8 @@ export function handleBorrow(event: Borrow): void {
  *    Update creditBorrow in CreditLimit entity if borrower has credit limit
  */
 export function handleRepayBorrow(event: RepayBorrow): void {
-  // TODO: decrease creditBorrow in CreditLimit entity if exists
-  let market = Market.load(event.address.toHexString()) as Market
+  let marketAddress = event.address.toHexString()
+  let market = Market.load(marketAddress) as Market
   let accountID = event.params.borrower.toHex()
   let account = Account.load(accountID)
   if (account == null) {
@@ -303,6 +323,15 @@ export function handleRepayBorrow(event: RepayBorrow): void {
   repay.payer = event.params.payer
   repay.cToken = event.address
   repay.save()
+
+  // keep track of credit limit data if borrower is a credit limit account
+  let creditLimitID = event.params.borrower.toHexString().concat('-').concat(marketAddress)
+  let creditLimit = CreditLimit.load(creditLimitID)
+  if (creditLimit != null){
+    creditLimit.creditBorrow = accountBorrows
+    creditLimit.blockTimestamp = event.block.timestamp.toI32()
+    creditLimit.save()
+  }
 }
 
 export function handleLiquidateBorrow(event: LiquidateBorrow): void {
@@ -311,15 +340,20 @@ export function handleLiquidateBorrow(event: LiquidateBorrow): void {
   // the underwater borrower. So we must get that address from the event, and
   // the repay token is the event.address
   let marketRepayToken = Market.load(event.address.toHexString()) as Market
-  let marketCTokenLiquidated = Market.load(event.params.cTokenCollateral.toHexString()) as Market
+  let marketCTokenLiquidated = Market.load(event.params.cTokenCollateral.toHexString())
+  if (marketCTokenLiquidated == null) {
+    return
+  }
 
   let borrowerID = event.params.borrower.toHexString()
   let borrowCTokenStatsID = marketRepayToken.id.concat('-').concat(borrowerID)
   let borrowCToken = AccountCToken.load(borrowCTokenStatsID) as AccountCToken
 
   let seizeCTokenStatsID = marketCTokenLiquidated.id.concat('-').concat(borrowerID)
-  let seizeCToken = AccountCToken.load(seizeCTokenStatsID) as AccountCToken
-
+  let seizeCToken = AccountCToken.load(seizeCTokenStatsID)
+  if (seizeCToken == null) {
+    seizeCToken = createAccountCToken(seizeCTokenStatsID, marketCTokenLiquidated.symbol, borrowerID, marketCTokenLiquidated.id)
+  }
   let liquidateID = event.transaction.hash
     .toHexString()
     .concat('-')
@@ -454,12 +488,39 @@ export function handleTransfer(event: Transfer): void {
 }
 
 export function handleFlashloan(event: Flashloan): void {
-  // TODO
+  let flashloanID = event.transaction.hash.toHexString().concat('-').concat(event.transactionLogIndex.toString())
+  let flashloanEvent = new FlashloanEvent(flashloanID)
+  let marketID = event.address.toHexString()
+  let market = Market.load(marketID) as Market
+
+  flashloanEvent.blockNumber = event.block.number.toI32()
+  flashloanEvent.blockTime = event.block.timestamp.toI32()
+  flashloanEvent.receiver = event.params.receiver
+  flashloanEvent.market = marketID
+  flashloanEvent.amount = event.params.amount.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+  flashloanEvent.totalFee = event.params.totalFee.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+  flashloanEvent.reservesFee = event.params.reservesFee.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+  flashloanEvent.save()
 }
 
 export function handleUserCollateralChanged(event: UserCollateralChanged): void {
-  // TODO: load AccountCToken.cTokenCollateralBalance and diff with event.params.newCollateralTokens
-  // load Market and update the totalCollateralTokens according to the diff
+  let marketID = event.address.toHexString()
+  let market = Market.load(marketID) as Market
+
+  let accountID = event.params.account.toHexString()
+  let accountCTokenID = market.id.concat('-').concat(accountID)
+  let accountCToken = AccountCToken.load(accountCTokenID)
+  if (accountCToken == null) {
+    accountCToken = createAccountCToken(accountCTokenID, market.symbol, accountID, marketID)
+  }
+  
+  let newCollateralTokens = event.params.newCollateralTokens.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+  let diff = newCollateralTokens.minus(accountCToken.cTokenCollateralBalance)
+
+  accountCToken.cTokenCollateralBalance = newCollateralTokens
+  accountCToken.save()
+  market.totalCollateralTokens = market.totalCollateralTokens.plus(diff)
+  market.save()
 }
 
 export function handleNewReserveFactor(event: NewReserveFactor): void {
@@ -479,10 +540,29 @@ export function handleNewMarketInterestRateModel(
 }
 
 export function handleNewImplementation(event: NewImplementation): void {
-  // TODO: update implementation contract address
-  // if implementation is CRenameImplementation, update CToken symbol and name
+  let marketID = event.address.toHex()
+  let market = Market.load(marketID) as Market
+  market.implementation = event.params.newImplementation
+  market.save()
 }
 
 export function handleNewCollateralCap(event: NewCollateralCap): void {
-  // TODO
+  let marketID = event.address.toHex()
+  let market = Market.load(marketID) as Market
+  market.collateralCap = event.params.newCap.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+  market.save()
+}
+
+export function handleNewTokenName(event: NewTokenName): void {
+  let marketID = event.address.toHex()
+  let market = Market.load(marketID) as Market
+  market.name = event.params.newTokenName
+  market.save()
+}
+
+export function handleNewTokenSymbol(event: NewTokenSymbol): void {
+  let marketID = event.address.toHex()
+  let market = Market.load(marketID) as Market
+  market.symbol = event.params.newTokenSymbol
+  market.save()
 }
