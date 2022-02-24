@@ -199,7 +199,7 @@ type FlashloanEvent @entity {
 TransferEvent will be stored for every mint, redeem, liquidation, and any normal
 transfer between two accounts.
 """
-type TransferEvent implements CTokenTransfer @entity {
+type TransferEvent @entity {
   "Transaction hash concatenated with log index"
   id: ID!
   "cToken Market"

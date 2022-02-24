@@ -49,7 +49,10 @@ export function handleNewAdmin(event: NewAdmin): void {
 }
 
 export function handleNewImplementation(event: NewImplementation): void {
-  let comptroller = Comptroller.load('1') as Comptroller
+  let comptroller = Comptroller.load('1')
+  if (comptroller == null) {
+    comptroller = createComptroller(event.address)
+  }
   comptroller.implementation = event.params.newImplementation
   comptroller.save()
 }
@@ -99,41 +102,31 @@ export function handleNewLiquidityMining(event: NewLiquidityMining): void {
 
 export function handleGlobalActionPaused(event: ActionPaused):void {
   let comptroller = Comptroller.load('1') as Comptroller
-  switch (event.params.action) {
-    case 'Transfer': {
-      comptroller.transferGuardianPaused = event.params.pauseState
-      break
-    }
-    case 'Seize': {
-      comptroller.seizeGuardianPaused = event.params.pauseState
-      break
-    }
-    default: { 
-      break 
-   }
+  let action = event.params.action
+  let pauseState = event.params.pauseState
+  if (action == 'Transfer'){
+    comptroller.transferGuardianPaused = pauseState
+    comptroller.save()
+  } else if (action == 'Seize'){
+    comptroller.seizeGuardianPaused = pauseState
+    comptroller.save()
   }
-  comptroller.save()
+  
 }
 
 export function handleCTokenActionPaused(event: ActionPaused1): void {
   let market = Market.load(event.params.cToken.toHexString())
   if (market != null) {
-    switch (event.params.action) {
-      case 'Mint': {
-        market.supplyPaused = event.params.pauseState
-        break
-      }
-      case 'Borrow': {
-        market.borrowPaused = event.params.pauseState
-        break
-      }
-      case 'Flashloan': {
-        market.flashloanPaused = event.params.pauseState
-        break
-      }
-      default: { 
-        break 
-     }
+    let action = event.params.action
+    let pauseState = event.params.pauseState
+    if (action ==  'Mint') {
+      market.supplyPaused = pauseState
+    }
+    else if (action == 'Borrow') {
+      market.borrowPaused = pauseState
+    }
+    if (action == 'Flashloan') {
+      market.flashloanPaused = pauseState
     }
     market.save()
   }
@@ -260,13 +253,13 @@ export function handleCreditLimitChanged(event: CreditLimitChanged): void {
   let marketAddress = event.params.market.toHexString()
   let creditLimitID = borrowerAddress.concat('-').concat(marketAddress)
   let market = Market.load(marketAddress)
-  var creditLimit = CreditLimit.load(creditLimitID)
+  let creditLimit = CreditLimit.load(creditLimitID)
   if (market != null){
     if (creditLimit == null){
       creditLimit = createCreditLimit(event)
     } 
     creditLimit.creditLimit = event.params.creditLimit.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
-    creditLimit.blockTimestamp = event.block.timestamp
+    creditLimit.blockTimestamp = event.block.timestamp.toI32()
     creditLimit.save()
   }
 }
