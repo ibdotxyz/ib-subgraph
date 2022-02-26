@@ -549,7 +549,7 @@ export function handleNewImplementation(event: NewImplementation): void {
 export function handleNewCollateralCap(event: NewCollateralCap): void {
   let marketID = event.address.toHex()
   let market = Market.load(marketID) as Market
-  market.collateralCap = event.params.newCap.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+  market.collateralCap = event.params.newCap.toBigDecimal().div(exponentToBigDecimal(market.decimals)).truncate(market.decimals)
   market.save()
 }
 

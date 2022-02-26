@@ -50,6 +50,8 @@ type Market @entity {
   symbol: String!
   "cToken name"
   name: String!
+  "cToken decimals"
+  decimals: Int!
   "Underlying token address"
   underlyingAddress: Bytes!
   "Underlying token decimal length"
