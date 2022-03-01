@@ -513,8 +513,8 @@ export function handleUserCollateralChanged(event: UserCollateralChanged): void 
   if (accountCToken == null) {
     accountCToken = createAccountCToken(accountCTokenID, market.symbol, accountID, marketID)
   }
-  
-  let newCollateralTokens = event.params.newCollateralTokens.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+
+  let newCollateralTokens = event.params.newCollateralTokens.toBigDecimal().div(cTokenDecimalsBD).truncate(cTokenDecimals)
   let diff = newCollateralTokens.minus(accountCToken.cTokenCollateralBalance)
 
   accountCToken.cTokenCollateralBalance = newCollateralTokens
@@ -549,7 +549,7 @@ export function handleNewImplementation(event: NewImplementation): void {
 export function handleNewCollateralCap(event: NewCollateralCap): void {
   let marketID = event.address.toHex()
   let market = Market.load(marketID) as Market
-  market.collateralCap = event.params.newCap.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
+  market.collateralCap = event.params.newCap.toBigDecimal().div(cTokenDecimalsBD).truncate(cTokenDecimals)
   market.save()
 }
 
