@@ -21,7 +21,6 @@ export function createMarket(marketAddress: Address): Market {
   market.address = marketAddress
   market.symbol = contract.symbol()
   market.name = contract.name()
-  market.decimals = contract.decimals()
 
   market.underlyingAddress = contract.underlying()
   let underlyingContract = ERC20.bind(contract.underlying())
