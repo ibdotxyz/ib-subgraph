@@ -6,8 +6,10 @@ import { CToken } from '../../generated/templates'
 import { ERC20 } from '../../generated/templates/CToken/ERC20'
 import { CCollateralCapErc20 } from '../../generated/templates/CToken/CCollateralCapErc20'
 import {
-  zeroBD,
-  initialExchangeRate
+  initialExchangeRate,
+  mantissaFactor,
+  mantissaFactorBD,
+  zeroBD
 } from '../helpers'
 
 export function createMarket(marketAddress: Address): Market {
@@ -39,7 +41,7 @@ export function createMarket(marketAddress: Address): Market {
   market.implementation = contract.implementation()
   market.interestRateModelAddress = contract.interestRateModel()
   market.collateralFactor = zeroBD
-  market.reserveFactor = zeroBD
+  market.reserveFactor = contract.reserveFactorMantissa().toBigDecimal().div(mantissaFactorBD).truncate(mantissaFactor)
 
   market.collateralCap = zeroBD
   market.supplyCap = zeroBD
