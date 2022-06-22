@@ -16,9 +16,7 @@ import {
   MarketExited,
   NewCollateralFactor,
   NewBorrowCap,
-  NewBorrowCapGuardian,
   NewSupplyCap,
-  NewSupplyCapGuardian,
   CreditLimitChanged
 } from '../../generated/Comptroller/Comptroller'
 
@@ -111,7 +109,7 @@ export function handleGlobalActionPaused(event: ActionPaused):void {
     comptroller.seizeGuardianPaused = pauseState
     comptroller.save()
   }
-  
+
 }
 
 export function handleCTokenActionPaused(event: ActionPaused1): void {
@@ -228,24 +226,12 @@ export function handleNewBorrowCap(event: NewBorrowCap): void {
   }
 }
 
-export function handleNewBorrowCapGuardian(event: NewBorrowCapGuardian): void {
-  let comptroller = Comptroller.load('1') as Comptroller
-  comptroller.borrowCapGuardian = event.params.newBorrowCapGuardian
-  comptroller.save()
-}
-
 export function handleNewSupplyCap(event: NewSupplyCap): void {
   let market = Market.load(event.params.cToken.toHexString())
   if (market != null) {
     market.supplyCap = event.params.newSupplyCap.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
     market.save()
   }
-}
-
-export function handleNewSupplyCapGuardian(event: NewSupplyCapGuardian): void {
-  let comptroller = Comptroller.load('1') as Comptroller
-  comptroller.supplyCapGuardian = event.params.newSupplyCapGuardian
-  comptroller.save()
 }
 
 export function handleCreditLimitChanged(event: CreditLimitChanged): void {
@@ -257,7 +243,7 @@ export function handleCreditLimitChanged(event: CreditLimitChanged): void {
   if (market != null){
     if (creditLimit == null){
       creditLimit = createCreditLimit(event)
-    } 
+    }
     creditLimit.creditLimit = event.params.creditLimit.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
     creditLimit.blockTimestamp = event.block.timestamp.toI32()
     creditLimit.save()

@@ -20,10 +20,6 @@ type Comptroller @entity {
   liquidationIncentive: BigInt!
   "Address of guardian who can pause market interactions"
   pauseGuardian: Bytes!
-  "Address of guardian who can set market borrow caps"
-  borrowCapGuardian: Bytes!
-  "Address of guardian who can set market supply caps"
-  supplyCapGuardian: Bytes!
   "Address of liquidity mining module"
   liquidityMining: Bytes!
   "State of the seize guardian being paused"

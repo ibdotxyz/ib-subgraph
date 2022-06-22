@@ -6,11 +6,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: Comptroller
-    network: avalanche
+    network: optimism
     source:
-      address: "0x2eE80614Ccbc5e28654324a66A396458Fa5cD7Cc"
+      address: "0xE0B57FEEd45e7D908f2d0DaCd26F113Cf26715BF"
       abi: Comptroller
-      startBlock: 5361428
+      startBlock: 12658427
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -47,7 +47,7 @@ dataSources:
           handler: handleCTokenActionPaused
         - event: MarketListed(address)
           handler: handleMarketListed
-        - event: MarketDelisted(address)
+        - event: MarketDelisted(address,bool)
           handler: handleMarketDelisted
         - event: MarketEntered(address,address)
           handler: handleMarketEntered
@@ -57,19 +57,15 @@ dataSources:
           handler: handleNewCollateralFactor
         - event: NewBorrowCap(indexed address,uint256)
           handler: handleNewBorrowCap
-        - event: NewBorrowCapGuardian(address,address)
-          handler: handleNewBorrowCapGuardian
         - event: NewSupplyCap(indexed address,uint256)
           handler: handleNewSupplyCap
-        - event: NewSupplyCapGuardian(address,address)
-          handler: handleNewSupplyCapGuardian
         - event: CreditLimitChanged(address,address,uint256)
           handler: handleCreditLimitChanged
       file: ./src/mappings/comptroller.ts
 templates:
   - name: CToken
     kind: ethereum/contract
-    network: avalanche
+    network: optimism
     source:
       abi: CCollateralCapErc20
     mapping:
