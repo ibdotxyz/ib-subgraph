@@ -370,3 +370,60 @@ type RepayEvent implements UnderlyingTransfer @entity {
   "cToken of the repaid tokens"
   cToken: Bytes!
 }
+"""
+StakingRewardsFactory stores the StakingReward created by the factory
+"""
+type StakingRewardsFactory @entity {
+  "factory address in string as the unique identifier"
+  id: ID!
+  "factory address in bytes"
+  address: Bytes!
+  "StakingRewards contracts created by this factory"
+  stakingRewards: [StakingRewards!] @derivedFrom(field:"factory")
+}
+
+"""
+StakingRewards stores the StakingRewards created by the factory
+"""
+type StakingRewards @entity {
+  "contract address in string as the unique identifier"
+  id: ID!
+  "contract address in bytes"
+  address: Bytes!
+  "the factory that created this StakingRewards"
+  factory: StakingRewardsFactory!
+  "the market iToken associated with this StakingRewards"
+  market: Market!
+  "total amount staked in this StakingRewards contract"
+  totalStaked: BigDecimal!
+  "all staking user records associated with this contract"
+  stakingRewardsUsers: [StakingRewardsUser!] @derivedFrom(field:"stakingRewards")
+}
+"""
+StakingRewardsUser stores the User level staking information re. one StakingReward contract
+"""
+type StakingRewardsUser @entity {
+  "StakingRewards address concatenated with user address"
+  id: ID!
+  "the StakingRewards contract associated with this record"
+  stakingRewards: StakingRewards!
+  "the user associated with this record"
+  user:Bytes!
+  "current total amount staked"
+  stakedBalance: BigDecimal!
+  "total reward claimed"
+  rewardsClaimed: [StakingRewardsUserReward!] @derivedFrom(field: "stakingRewardsUser")
+}
+
+
+"""
+StakingRewardsUserReward stores the reward token level claim information
+"""
+type StakingRewardsUserReward @entity {
+  "StakingRewardsUser id concatenated with rewardsTokenAddress"
+  id: ID!
+  stakingRewardsUser: StakingRewardsUser!
+  rewardsToken:Bytes!
+  "total rewards claimed"
+  totalRewardsClaimed: BigDecimal!
+}

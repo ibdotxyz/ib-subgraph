@@ -62,6 +62,29 @@ dataSources:
         - event: CreditLimitChanged(address,address,uint256)
           handler: handleCreditLimitChanged
       file: ./src/mappings/comptroller.ts
+  - kind: ethereum/contract
+    name: StakingRewardsFactory
+    network: optimism
+    source:
+      address: "0x35F70CE60f049A8c21721C53a1dFCcB5bF4a1Ea8"
+      abi: StakingRewardsFactory
+      startBlock: 12661952
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StakingRewardsFactory
+        - StakingRewards
+      abis:
+        - name: StakingRewardsFactory
+          file: ./abis/StakingRewardsFactory.json
+        - name: StakingRewards
+          file: ./abis/StakingRewards.json
+      eventHandlers:
+        - event: StakingRewardsCreated(indexed address,indexed address)
+          handler: handleStakingRewardsCreated
+      file: ./src/mappings/stakingRewardsFactory.ts
 templates:
   - name: CToken
     kind: ethereum/contract
@@ -113,3 +136,29 @@ templates:
         - event: NewTokenSymbol(string,string)
           handler: handleNewTokenSymbol
       file: ./src/mappings/ctoken.ts
+  - name: StakingRewards
+    kind: ethereum/contract
+    network: optimism
+    source:
+      abi: StakingRewards
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StakingRewards
+        - StakingRewardsUser
+        - StakingRewardsUserRewards
+      abis:
+        - name: StakingRewards
+          file: ./abis/StakingRewards.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Staked(indexed address,uint256)
+          handler: handleStaked
+        - event: Withdrawn(indexed address,uint256)
+          handler: handleWithdrawal
+        - event: RewardPaid(indexed address,address,uint256)
+          handler: handleRewardsPaid
+      file: ./src/mappings/stakingRewards.ts
