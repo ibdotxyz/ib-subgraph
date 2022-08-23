@@ -2,58 +2,87 @@
 
 import { Staked, Withdrawn, RewardPaid} from '../../generated/StakingRewardsFactory/StakingRewards'
 import { ERC20 } from '../../generated/templates/CToken/ERC20'
-import { Address } from '@graphprotocol/graph-ts'
-import { StakingRewardsUserReward, StakingRewards, StakingRewardsUser } from '../../generated/schema'
+import { Address, BigInt } from '@graphprotocol/graph-ts'
+import { StakingRewardsAccountAction, StakingRewards, Account, Market } from '../../generated/schema'
 import { cTokenDecimals,cTokenDecimalsBD,exponentToBigDecimal, zeroBD} from '../helpers'
+import { createAccount } from "./account"
 
-function getStakingRewardsUser(stakingRewards:StakingRewards, userAddress:Address):StakingRewardsUser{
-    let stakingRewardsUserId = stakingRewards.address.toHexString().concat('-').concat(userAddress.toHexString())
-    let stakingRewardsUser = StakingRewardsUser.load(stakingRewardsUserId)
 
-    if (stakingRewardsUser == null) {
-        stakingRewardsUser = new StakingRewardsUser(stakingRewardsUserId)
-        stakingRewardsUser.user = userAddress
-        stakingRewardsUser.stakingRewards = stakingRewards.id    
-        stakingRewardsUser.stakedBalance = zeroBD
-    }
-    return stakingRewardsUser
+enum StakingRewardsAccountActionType {
+    Stake,
+    Withdraw,
+    ClaimReward,
 }
 
+
+function getAccount(address:Address): Account {
+    let account = Account.load(address.toHex())
+    if (account == null) {
+        account = createAccount(address.toHex())
+    }
+    return account
+}
+function getStakingRewardsAccountAction(stakingRewards:StakingRewards, account:Account, transactionHash:string, logIndex:string, blockTimestamp: BigInt):StakingRewardsAccountAction {
+    let stakingRewardsAccountActionId = transactionHash.concat("-").concat(logIndex)
+    let stakingRewardsAccountAction =  new StakingRewardsAccountAction(stakingRewardsAccountActionId)
+    stakingRewardsAccountAction.account = account.id
+    stakingRewardsAccountAction.stakingRewards = stakingRewards.id
+    stakingRewardsAccountAction.blockTimestamp = blockTimestamp.toI32()
+    return stakingRewardsAccountAction
+}
 export function handleStaked(event: Staked): void {
     let stakingRewards = StakingRewards.load(event.address.toHexString()) as StakingRewards    
-    let stakingRewardsUser = getStakingRewardsUser(stakingRewards, event.params.user)
-    let stakedAmount = event.params.amount.toBigDecimal().div(cTokenDecimalsBD).truncate(cTokenDecimals)
-    stakingRewardsUser.stakedBalance = stakingRewardsUser.stakedBalance.plus(stakedAmount)
-    stakingRewards.totalStaked = stakingRewards.totalStaked.plus(stakedAmount)
+    let account = getAccount(event.params.user)
+    let stakingRewardsAccountAction = getStakingRewardsAccountAction(stakingRewards, account, event.transaction.hash.toHexString(), event.logIndex.toString(), event.block.timestamp)
+    let market = Market.load(stakingRewards.market) as Market
+
+    let stakedUnderlyingAmount = market.exchangeRate.times(
+        event.params.amount.toBigDecimal().div(cTokenDecimalsBD),
+      )
+
+    stakingRewardsAccountAction.type = StakingRewardsAccountActionType.Stake
+    stakingRewardsAccountAction.amount = stakedUnderlyingAmount
+    stakingRewardsAccountAction.token = stakingRewards.market
+    
+
+    stakingRewards.totalStaked = stakingRewards.totalStaked.plus(stakedUnderlyingAmount)
     stakingRewards.save()
-    stakingRewardsUser.save()
+    stakingRewardsAccountAction.save()
 }
 
 export function handleWithdrawal(event: Withdrawn): void {
     let stakingRewards = StakingRewards.load(event.address.toHexString()) as StakingRewards    
-    let stakingRewardsUser = getStakingRewardsUser(stakingRewards, event.params.user)
-    let withdrawnAmount = event.params.amount.toBigDecimal().div(cTokenDecimalsBD).truncate(cTokenDecimals)
-    stakingRewardsUser.stakedBalance = stakingRewardsUser.stakedBalance.minus(withdrawnAmount)
-    stakingRewards.totalStaked = stakingRewards.totalStaked.minus(withdrawnAmount)
+    let account = getAccount(event.params.user)
+    let stakingRewardsAccountAction = getStakingRewardsAccountAction(stakingRewards, account, event.transaction.hash.toHexString(), event.logIndex.toString(), event.block.timestamp)
+    let market = Market.load(stakingRewards.market) as Market
+
+    let withdrawnUnderlyingAmount = market.exchangeRate.times(
+        event.params.amount.toBigDecimal().div(cTokenDecimalsBD),
+      )
+        
+    stakingRewardsAccountAction.type = StakingRewardsAccountActionType.Withdraw
+    stakingRewardsAccountAction.amount = withdrawnUnderlyingAmount
+    stakingRewardsAccountAction.token = stakingRewards.market
+
+    stakingRewards.totalStaked = stakingRewards.totalStaked.minus(withdrawnUnderlyingAmount)
     stakingRewards.save()
-    stakingRewardsUser.save()
+    stakingRewardsAccountAction.save()
 }
 
 
 export function handleRewardsPaid(event: RewardPaid): void {
     let stakingRewards = StakingRewards.load(event.address.toHexString()) as StakingRewards    
-    let stakingRewardsUser = getStakingRewardsUser(stakingRewards, event.params.user)
-    let stakingRewardsUserRewardsId = stakingRewardsUser.id.concat("-").concat(event.params.rewardsToken.toHexString())
-    let stakingRewardsUserReward = StakingRewardsUserReward.load(stakingRewardsUserRewardsId)
-    if (stakingRewardsUserReward==null){
-        stakingRewardsUserReward = new StakingRewardsUserReward(stakingRewardsUserRewardsId)
-        stakingRewardsUserReward.stakingRewardsUser = stakingRewardsUser.id
-        stakingRewardsUserReward.rewardsToken = event.params.rewardsToken
-        stakingRewardsUserReward.totalRewardsClaimed = zeroBD
-    }
+    let account = getAccount(event.params.user)
+    let stakingRewardsAccountAction = getStakingRewardsAccountAction(stakingRewards, account, event.transaction.hash.toHexString(), event.logIndex.toString(), event.block.timestamp)
+
     let rewardTokenContract = ERC20.bind(event.params.rewardsToken)
     let rewardTokenDecimals = rewardTokenContract.decimals()
     let rewardTokenDecimalsBD = exponentToBigDecimal(rewardTokenDecimals)
-    stakingRewardsUserReward.totalRewardsClaimed = stakingRewardsUserReward.totalRewardsClaimed.plus(event.params.reward.toBigDecimal().div(rewardTokenDecimalsBD).truncate(rewardTokenDecimals))
-    stakingRewardsUserReward.save()
+    let claimedAmount = event.params.reward.toBigDecimal().div(rewardTokenDecimalsBD).truncate(rewardTokenDecimals)
+
+    stakingRewardsAccountAction.type = StakingRewardsAccountActionType.ClaimReward
+    stakingRewardsAccountAction.amount = claimedAmount
+    stakingRewardsAccountAction.token = event.params.rewardsToken.toHexString()
+
+    stakingRewardsAccountAction.save()
 }

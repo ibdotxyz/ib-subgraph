@@ -147,8 +147,8 @@ templates:
       language: wasm/assemblyscript
       entities:
         - StakingRewards
-        - StakingRewardsUser
-        - StakingRewardsUserRewards
+        - StakingRewardsAccountAction
+        - Account
       abis:
         - name: StakingRewards
           file: ./abis/StakingRewards.json

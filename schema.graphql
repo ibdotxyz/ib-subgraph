@@ -103,6 +103,7 @@ type Account @entity {
     id: ID!
     "Array of CTokens user is in"
     tokens: [AccountCToken!]! @derivedFrom(field: "account")
+    stakingRewardsAccountActions: [StakingRewardsAccountAction!] @derivedFrom(field:"account")
 }
 
 """
@@ -397,33 +398,25 @@ type StakingRewards @entity {
   "total amount staked in this StakingRewards contract"
   totalStaked: BigDecimal!
   "all staking user records associated with this contract"
-  stakingRewardsUsers: [StakingRewardsUser!] @derivedFrom(field:"stakingRewards")
+  stakingRewardsAccountActions: [StakingRewardsAccountAction!] @derivedFrom(field:"stakingRewards")
 }
+
 """
-StakingRewardsUser stores the User level staking information re. one StakingReward contract
+StakingRewardsAccountAction records an account's action on any StakingRewards contract
 """
-type StakingRewardsUser @entity {
-  "StakingRewards address concatenated with user address"
+type StakingRewardsAccountAction @entity {
+  "tx hash concatenanted with logIndex"
   id: ID!
-  "the StakingRewards contract associated with this record"
+  "block timestamp"
+  blockTimestamp: Int!
+  "stakingRewards contract associated with this action"
   stakingRewards: StakingRewards!
-  "the user associated with this record"
-  user:Bytes!
-  "current total amount staked"
-  stakedBalance: BigDecimal!
-  "total reward claimed"
-  rewardsClaimed: [StakingRewardsUserReward!] @derivedFrom(field: "stakingRewardsUser")
-}
-
-
-"""
-StakingRewardsUserReward stores the reward token level claim information
-"""
-type StakingRewardsUserReward @entity {
-  "StakingRewardsUser id concatenated with rewardsTokenAddress"
-  id: ID!
-  stakingRewardsUser: StakingRewardsUser!
-  rewardsToken:Bytes!
-  "total rewards claimed"
-  totalRewardsClaimed: BigDecimal!
+  "user account associated with this action"
+  account: Account!
+  "type of action"
+  type: Int!
+  "token associated with this action"
+  token: String!
+  "amount associated with this action"
+  amount: BigDecimal!
 }
