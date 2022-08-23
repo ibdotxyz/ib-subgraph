@@ -38,7 +38,7 @@ export function handleStaked(event: Staked): void {
 
     let stakedUnderlyingAmount = market.exchangeRate.times(
         event.params.amount.toBigDecimal().div(cTokenDecimalsBD),
-      )
+      ).truncate(market.underlyingDecimals)
 
     stakingRewardsAccountAction.type = StakingRewardsAccountActionType.Stake
     stakingRewardsAccountAction.amount = stakedUnderlyingAmount
@@ -58,7 +58,7 @@ export function handleWithdrawal(event: Withdrawn): void {
 
     let withdrawnUnderlyingAmount = market.exchangeRate.times(
         event.params.amount.toBigDecimal().div(cTokenDecimalsBD),
-      )
+      ).truncate(market.underlyingDecimals)
         
     stakingRewardsAccountAction.type = StakingRewardsAccountActionType.Withdraw
     stakingRewardsAccountAction.amount = withdrawnUnderlyingAmount
