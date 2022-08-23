@@ -103,6 +103,7 @@ type Account @entity {
     id: ID!
     "Array of CTokens user is in"
     tokens: [AccountCToken!]! @derivedFrom(field: "account")
+    stakingRewardsAccountActions: [StakingRewardsAccountAction!] @derivedFrom(field:"account")
 }
 
 """
@@ -369,4 +370,53 @@ type RepayEvent implements UnderlyingTransfer @entity {
   payer: Bytes!
   "cToken of the repaid tokens"
   cToken: Bytes!
+}
+"""
+StakingRewardsFactory stores the StakingReward created by the factory
+"""
+type StakingRewardsFactory @entity {
+  "factory address in string as the unique identifier"
+  id: ID!
+  "factory address in bytes"
+  address: Bytes!
+  "StakingRewards contracts created by this factory"
+  stakingRewards: [StakingRewards!] @derivedFrom(field:"factory")
+}
+
+"""
+StakingRewards stores the StakingRewards created by the factory
+"""
+type StakingRewards @entity {
+  "contract address in string as the unique identifier"
+  id: ID!
+  "contract address in bytes"
+  address: Bytes!
+  "the factory that created this StakingRewards"
+  factory: StakingRewardsFactory!
+  "the market iToken associated with this StakingRewards"
+  market: Market!
+  "total amount staked in this StakingRewards contract"
+  totalStaked: BigDecimal!
+  "all staking user records associated with this contract"
+  stakingRewardsAccountActions: [StakingRewardsAccountAction!] @derivedFrom(field:"stakingRewards")
+}
+
+"""
+StakingRewardsAccountAction records an account's action on any StakingRewards contract
+"""
+type StakingRewardsAccountAction @entity {
+  "tx hash concatenanted with logIndex"
+  id: ID!
+  "block timestamp"
+  blockTimestamp: Int!
+  "stakingRewards contract associated with this action"
+  stakingRewards: StakingRewards!
+  "user account associated with this action"
+  account: Account!
+  "type of action"
+  type: Int!
+  "token associated with this action"
+  token: String!
+  "amount associated with this action"
+  amount: BigDecimal!
 }
