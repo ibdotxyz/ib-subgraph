@@ -245,7 +245,7 @@ export function handleCreditLimitChanged(event: CreditLimitChanged): void {
       creditLimit = createCreditLimit(event)
     }
     creditLimit.creditLimit = event.params.creditLimit.toBigDecimal().div(exponentToBigDecimal(market.underlyingDecimals)).truncate(market.underlyingDecimals)
-    creditLimit.blockTimestamp = event.block.timestamp.toI32()
+    creditLimit.blockTime = event.block.timestamp.toI32()
     creditLimit.save()
   }
 }

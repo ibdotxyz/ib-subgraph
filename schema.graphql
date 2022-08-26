@@ -91,7 +91,7 @@ type Market @entity {
   "Total number of cToken used as collateral"
   totalCollateralTokens: BigDecimal!
   "Timestamp the market was most recently updated"
-  blockTimestamp: Int!
+  blockTime: Int!
 }
 
 """
@@ -122,7 +122,7 @@ type CreditLimit @entity {
   "Current borrow balance stored in contract (exclusive of interest since blockTimestamp)"
   creditBorrow: BigDecimal!
   "Timestamp the market was most recently updated"
-  blockTimestamp: Int!
+  blockTime: Int!
 }
 
 """
@@ -149,7 +149,7 @@ type AccountCToken @entity {
   "Current borrow balance stored in contract (exclusive of interest since accrualBlockNumber)"
   storedBorrowBalance: BigDecimal!
   "Timestamp the market was most recently updated"
-  blockTimestamp: Int!
+  blockTime: Int!
 }
 
 """
@@ -408,7 +408,7 @@ type StakingRewardsAccountAction @entity {
   "tx hash concatenanted with logIndex"
   id: ID!
   "block timestamp"
-  blockTimestamp: Int!
+  blockTime: Int!
   "stakingRewards contract associated with this action"
   stakingRewards: StakingRewards!
   "user account associated with this action"

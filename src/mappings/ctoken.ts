@@ -44,7 +44,7 @@ export function handleAccrueInterest(event: AccrueInterest): void {
   if (market == null){
     return
   }
-  market.blockTimestamp = blockTimestamp
+  market.blockTime = blockTimestamp
 
   market.cash = event.params.cashPrior
     .toBigDecimal()
@@ -205,7 +205,7 @@ export function handleBorrow(event: Borrow): void {
     .div(exponentToBigDecimal(market.underlyingDecimals))
     .truncate(market.underlyingDecimals)
 
-  cTokenStats.blockTimestamp = event.block.timestamp.toI32()
+  cTokenStats.blockTime = event.block.timestamp.toI32()
   cTokenStats.save()
 
   let borrowID = event.transaction.hash
@@ -238,7 +238,7 @@ export function handleBorrow(event: Borrow): void {
   let creditLimit = CreditLimit.load(creditLimitID)
   if (creditLimit != null){
     creditLimit.creditBorrow = accountBorrows
-    creditLimit.blockTimestamp = event.block.timestamp.toI32()
+    creditLimit.blockTime = event.block.timestamp.toI32()
     creditLimit.save()
   }
 }
@@ -295,7 +295,7 @@ export function handleRepayBorrow(event: RepayBorrow): void {
     .div(exponentToBigDecimal(market.underlyingDecimals))
     .truncate(market.underlyingDecimals)
 
-  cTokenStats.blockTimestamp = event.block.timestamp.toI32()
+  cTokenStats.blockTime = event.block.timestamp.toI32()
   cTokenStats.save()
 
   let repayID = event.transaction.hash
@@ -329,7 +329,7 @@ export function handleRepayBorrow(event: RepayBorrow): void {
   let creditLimit = CreditLimit.load(creditLimitID)
   if (creditLimit != null){
     creditLimit.creditBorrow = accountBorrows
-    creditLimit.blockTimestamp = event.block.timestamp.toI32()
+    creditLimit.blockTime = event.block.timestamp.toI32()
     creditLimit.save()
   }
 }
