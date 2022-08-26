@@ -47,7 +47,7 @@ export function updateCommonCTokenStats(
     blockNumber,
     logIndex,
   )
-  cTokenStats.blockTimestamp = timestamp.toI32()
+  cTokenStats.blockTime = timestamp.toI32()
   return cTokenStats as AccountCToken
 }
 

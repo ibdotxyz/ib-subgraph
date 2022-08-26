@@ -55,7 +55,7 @@ export function createMarket(marketAddress: Address): Market {
   market.totalBorrows = zeroBD
   market.totalSupply = zeroBD
   market.totalCollateralTokens = zeroBD
-  market.blockTimestamp = 0
+  market.blockTime = 0
 
   return market
 }

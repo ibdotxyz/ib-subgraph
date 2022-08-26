@@ -27,7 +27,7 @@ function getStakingRewardsAccountAction(stakingRewards:StakingRewards, account:A
     let stakingRewardsAccountAction =  new StakingRewardsAccountAction(stakingRewardsAccountActionId)
     stakingRewardsAccountAction.account = account.id
     stakingRewardsAccountAction.stakingRewards = stakingRewards.id
-    stakingRewardsAccountAction.blockTimestamp = blockTimestamp.toI32()
+    stakingRewardsAccountAction.blockTime = blockTimestamp.toI32()
     return stakingRewardsAccountAction
 }
 export function handleStaked(event: Staked): void {

@@ -16,7 +16,7 @@ export function createCreditLimit(event: CreditLimitChanged): CreditLimit {
   creditLimit.market = marketAddress.toHexString()
   creditLimit.creditLimit = zeroBD
   creditLimit.creditBorrow = zeroBD
-  creditLimit.blockTimestamp = event.block.timestamp.toI32()
+  creditLimit.blockTime = event.block.timestamp.toI32()
 
   return  creditLimit
 }
